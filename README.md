@@ -22,9 +22,9 @@ A user can ask the bot a question and the bot responds with an answer if it's in
 * View the original version of the edited QnA
 * View details of manually added QnA
 
-**Here are some screenshots showing FAQ Plus in action:**
+**Here are some screenshots showing CELA Bot in action:**
 
-*	A user interacting with FAQ Plus through chat:
+*	A user interacting with CELA Bot through chat:
 
 ![FAQ Plus in action (user view)](https://github.com/OfficeDev/microsoft-teams-faqplusplus-app/wiki/images/FAQPlusEndUser.gif)
 
