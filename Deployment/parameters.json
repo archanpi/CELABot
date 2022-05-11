@@ -1,14 +1,14 @@
 {
   "TenantId": {
-    "Value": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+    "Value": "",
     "Description": "Azure tenant Id."
   },
   "SubscriptionId": {
-    "Value": "dbd697c3-ef40-488f-83e6-5ad4dfb78f9b",
+    "Value": "e85aa023-1889-47df-85fd-128522fc4b51",
     "Description": "Azure active subscription Id."
   },
   "SubscriptionTenantId": {
-    "Value": "72f988bf-86f1-41af-91ab-2d7cd011db47",
+    "Value": "",
     "Description": "Tenant Id for Azure active subscription where all resources will be created."
   },
   "Location": {
@@ -16,15 +16,15 @@
     "Description": "Azure region resources will be created in."
   },
   "ResourceGroupName": {
-    "Value": "archanpi",
+    "Value": "CELAHackathon2022",
     "Description": "The resource group name that will contain all resources created."
   },
   "BaseAppName": {
-    "Value": "CelaChatBot",
+    "Value": "",
     "Description": "The base app name that will be used to create bot app and config app."
   },
   "BaseResourceName": {
-    "Value": "CelaTeamsChatBot",
+    "Value": "",
     "Description": "The base name to use for the resources that will be provisioned."
   },
   "ConfigAdminUPNList": {
@@ -76,7 +76,7 @@
     "Description": "The pricing tier for the Azure Search service."
   },
   "GitRepoUrl": {
-    "Value": "https://github.com/OfficeDev/microsoft-teams-apps-faqplus.git",
+    "Value": "https://github.com/archanpi/CELABot.git",
     "Description": "The URL to the GitHub repository to deploy."
   },
   "GitBranch": {
