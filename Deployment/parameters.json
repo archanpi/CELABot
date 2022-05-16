@@ -32,7 +32,7 @@
     "Description": "Semicolon-delimited list of the user principal names (UPNs) allowed to access the configuration app."
   },
   "CompanyName": {
-    "Value": "Microsoft",
+    "Value": "CELA Hackathon Team",
     "Description": "Company name."
   },
   "WebsiteUrl": {
