@@ -24,6 +24,8 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
     using Microsoft.Teams.Apps.FAQPlusPlus.Common.TeamsActivity;
     using Newtonsoft.Json.Linq;
     using ErrorResponseException = Microsoft.Azure.CognitiveServices.Knowledge.QnAMaker.Models.ErrorResponseException;
+    using System.Xml;
+    using Newtonsoft.Json;
 
     /// <summary>
     /// Class that handles get/add/update of QnA pairs.
@@ -36,6 +38,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
         private readonly ILogger<QnAPairServiceFacade> logger;
         private readonly string appBaseUri;
         private readonly BotSettings options;
+        private readonly ICelaBotMemoryCache mCache;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="QnAPairServiceFacade"/> class.
@@ -45,12 +48,14 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
         /// <param name="qnaServiceProvider">QnA service provider.</param>
         /// <param name="botSettings">Represents a set of key/value application configuration properties for FaqPlusPlus bot.</param>ram>
         /// <param name="logger">Instance to send logs to the Application Insights service.</param>
+        /// <param name="memoryCache">Memory cache</param>
         public QnAPairServiceFacade(
             Common.Providers.IConfigurationDataProvider configurationProvider,
             IQnaServiceProvider qnaServiceProvider,
             IActivityStorageProvider activityStorageProvider,
             IOptionsMonitor<BotSettings> botSettings,
-            ILogger<QnAPairServiceFacade> logger)
+            ILogger<QnAPairServiceFacade> logger,
+            ICelaBotMemoryCache memoryCache)
         {
             this.configurationProvider = configurationProvider ?? throw new ArgumentNullException(nameof(configurationProvider));
             this.qnaServiceProvider = qnaServiceProvider ?? throw new ArgumentNullException(nameof(qnaServiceProvider));
@@ -63,6 +68,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
 
             this.options = botSettings.CurrentValue;
             this.appBaseUri = this.options.AppBaseUri;
+            this.mCache = memoryCache;
         }
 
         /// <summary>
@@ -83,6 +89,8 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
 
                 ResponseCardPayload payload = new ResponseCardPayload();
 
+                QandAResponse qandAResponse = new QandAResponse();
+
                 if (!string.IsNullOrEmpty(message.ReplyToId) && (message.Value != null))
                 {
                     payload = ((JObject)message.Value).ToObject<ResponseCardPayload>();
@@ -90,6 +98,16 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
 
                 queryResult = await this.qnaServiceProvider.GenerateAnswerAsync(question: text, isTestKnowledgeBase: false, payload.PreviousQuestions?.Last().Id.ToString(), payload.PreviousQuestions?.Last().Questions.First()).ConfigureAwait(false);
                 bool answerFound = false;
+
+                turnContext.Activity.RemoveRecipientMention();
+                var mention = new Mention
+                {
+                    Mentioned = turnContext.Activity.From,
+                    Text = $"<at>{XmlConvert.EncodeName(turnContext.Activity.From.Name)}</at>",
+                };
+                // Create a response
+                var response = MessageFactory.Text($"Hello {mention.Text}.  Here is the response for your question ");
+                response.Entities = new List<Entity> { mention };
 
                 foreach (QnASearchResult answerData in queryResult.Answers)
                 {
@@ -103,6 +121,15 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                         list[1] = answerData.Answer;
                         this.logger.LogInformation("Question and answer from qnamaker", list);
                         await turnContext.SendActivityAsync(MessageFactory.Attachment(ResponseCard.GetCard(answerData, text, this.appBaseUri, payload))).ConfigureAwait(false);
+                        // This is the expected answer
+                        var responseCard = MessageFactory.Attachment(ResponseCard.GetCard(answerData, text, this.appBaseUri, payload));
+                        response.Attachments.Add(responseCard.Attachments[0]);
+
+                        this.StoreUserQuestionAndAnswer(turnContext.Activity.From.Name, text, answerData.Answer.ToString(), answerData.Score);
+
+                        // This is the expected answer
+                        await turnContext.SendActivityAsync(response).ConfigureAwait(false);
+
                         answerFound = true;
                         break;
                     }
@@ -111,6 +138,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                 if (!answerFound)
                 {
                     this.logger.LogInformation("Answer not found", new object[] { text });
+                    this.StoreUserQuestionAndAnswer(turnContext.Activity.From.Name, text, "No Answer", 0);
                     await turnContext.SendActivityAsync(MessageFactory.Attachment(UnrecognizedInputCard.GetCard(text))).ConfigureAwait(false);
                 }
             }
@@ -134,6 +162,29 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                 // Throw the error at calling place, if there is any generic exception which is not caught.
                 throw;
             }
+        }
+
+        private void StoreUserQuestionAndAnswer(string fromUser, string question, string answer, double? score)
+        {
+            QandAResponse qandAResponse = new QandAResponse();
+            qandAResponse.UserName = fromUser;
+            qandAResponse.Question = question;
+            qandAResponse.Answer = answer;
+            qandAResponse.Score = score;
+            var usersQuestionList = mCache.GetCache<List<QandAResponse>>("CelBot");
+            if (usersQuestionList == null)
+            {
+                usersQuestionList = new List<QandAResponse>();
+                usersQuestionList.Add(qandAResponse);
+                mCache.SetCache(usersQuestionList, "CelBot");
+            }
+            else
+            {
+                usersQuestionList.Add(qandAResponse);
+                mCache.SetCache(usersQuestionList, "CelBot");
+            }
+
+            logger.LogInformation($"The following user has asked the list of questions {fromUser} Response {JsonConvert.SerializeObject(usersQuestionList)}");
         }
 
         /// <summary>
