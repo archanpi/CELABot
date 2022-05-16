@@ -98,7 +98,10 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                         ((!isContextOnly && payload.PreviousQuestions == null) ||
                             (isContextOnly && payload.PreviousQuestions != null)))
                     {
-                        // This is the expected answer
+                        object[] list = new object[2];
+                        list[0] = text;
+                        list[1] = answerData.Answer;
+                        this.logger.LogInformation("Question and answer from qnamaker", list);
                         await turnContext.SendActivityAsync(MessageFactory.Attachment(ResponseCard.GetCard(answerData, text, this.appBaseUri, payload))).ConfigureAwait(false);
                         answerFound = true;
                         break;
@@ -107,6 +110,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
 
                 if (!answerFound)
                 {
+                    this.logger.LogInformation("Answer not found", new object[] { text });
                     await turnContext.SendActivityAsync(MessageFactory.Attachment(UnrecognizedInputCard.GetCard(text))).ConfigureAwait(false);
                 }
             }

@@ -11,6 +11,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
     using Microsoft.Bot.Builder;
     using Microsoft.Bot.Schema;
     using Microsoft.Bot.Schema.Teams;
+    using Microsoft.Extensions.Logging;
     using Microsoft.Teams.Apps.FAQPlusPlus.Common.Cards;
     using Microsoft.Teams.Apps.FAQPlusPlus.Common.Models;
     using Microsoft.Teams.Apps.FAQPlusPlus.Common.Providers;
@@ -22,6 +23,9 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
     /// </summary>
     public static class AdaptiveCardHelper
     {
+
+        private static readonly ILogger Logger;
+
         /// <summary>
         /// Helps to get the expert submit card.
         /// </summary>
@@ -68,6 +72,13 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
             CancellationToken cancellationToken)
         {
             var shareFeedbackSubmitTextPayload = ((JObject)message.Value).ToObject<ShareFeedbackCardPayload>();
+            object[] list = new object[5];
+            list[0] = shareFeedbackSubmitTextPayload.Description;
+            list[1] = shareFeedbackSubmitTextPayload.Rating;
+            list[2] = shareFeedbackSubmitTextPayload.UserQuestion;
+            list[3] = shareFeedbackSubmitTextPayload.MsTeams;
+            list[4] = shareFeedbackSubmitTextPayload.KnowledgeBaseAnswer;
+            Logger.LogInformation("Received Feedback details", list);
 
             // Validate required fields.
             if (!Enum.TryParse(shareFeedbackSubmitTextPayload?.Rating, out FeedbackRating rating))

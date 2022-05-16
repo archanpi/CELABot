@@ -140,7 +140,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
 
                 // User submits the ask an expert card.
                 case Constants.AskAnExpertSubmitText:
-                    this.logger.LogInformation("Received question for expert");
+                    this.logger.LogInformation("Received question for expert", new object[] { text });
                     newTicket = await AdaptiveCardHelper.AskAnExpertSubmitText(message, turnContext, cancellationToken, this.ticketsProvider).ConfigureAwait(false);
                     if (newTicket != null)
                     {
@@ -152,7 +152,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
 
                 // User submits the share feedback card.
                 case Constants.ShareFeedbackSubmitText:
-                    this.logger.LogInformation("Received app feedback");
+                    this.logger.LogInformation("Received app feedback", new object[] { text });
                     smeTeamCard = await AdaptiveCardHelper.ShareFeedbackSubmitText(message, turnContext, cancellationToken).ConfigureAwait(false);
                     if (smeTeamCard != null)
                     {
