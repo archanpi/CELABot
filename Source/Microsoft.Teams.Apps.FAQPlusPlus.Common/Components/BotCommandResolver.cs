@@ -194,7 +194,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                     // Check if knowledge base has not published yet.
                     if (!hasPublished)
                     {
-                        var activity = turnContext.Activity;
+                        var activity = (Activity) turnContext.Activity;
                         var activityValue = ((JObject)activity.Value).ToObject<AdaptiveSubmitActionData>();
                         await turnContext.SendActivityAsync(MessageFactory.Text(string.Format(CultureInfo.InvariantCulture, Strings.WaitMessage, activityValue?.OriginalQuestion))).ConfigureAwait(false);
                         this.logger.LogError(ex, $"Error processing message: {ex.Message}", SeverityLevel.Error);
