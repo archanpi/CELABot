@@ -116,6 +116,9 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                         ((!isContextOnly && payload.PreviousQuestions == null) ||
                             (isContextOnly && payload.PreviousQuestions != null)))
                     {
+                        this.logger.LogInformation($"Question for qnamaker: {text}");
+                        this.logger.LogInformation($"Answer from qnamaker: {answerData.Answer}");
+
                         // This is the expected answer
                         var responseCard = MessageFactory.Attachment(ResponseCard.GetCard(answerData, text, this.appBaseUri, payload));
                         response.Attachments.Add(responseCard.Attachments[0]);
@@ -132,6 +135,8 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
 
                 if (!answerFound)
                 {
+                    this.logger.LogInformation($"Answer not found: {text}");
+
                     this.StoreUserQuestionAndAnswer(turnContext.Activity.From.Name, text, "No Answer", 0);
                     await turnContext.SendActivityAsync(MessageFactory.Attachment(UnrecognizedInputCard.GetCard(text))).ConfigureAwait(false);
                 }

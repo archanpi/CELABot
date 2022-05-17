@@ -121,6 +121,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
             TicketEntity newTicket = null;      // New ticket
 
             string text = (message.Text ?? string.Empty).Trim();
+            
 
             switch (text)
             {
@@ -141,7 +142,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                 // User submits the ask an expert card.
                 case Constants.AskAnExpertSubmitText:
                     this.logger.LogInformation("Received question for expert");
-                    newTicket = await AdaptiveCardHelper.AskAnExpertSubmitText(message, turnContext, cancellationToken, this.ticketsProvider).ConfigureAwait(false);
+                    newTicket = await AdaptiveCardHelper.AskAnExpertSubmitText(message, turnContext, cancellationToken, this.ticketsProvider, this.logger).ConfigureAwait(false);
                     if (newTicket != null)
                     {
                         smeTeamCard = new SmeTicketCard(newTicket).ToAttachment();
@@ -153,10 +154,10 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                 // User submits the share feedback card.
                 case Constants.ShareFeedbackSubmitText:
                     this.logger.LogInformation("Received app feedback");
-                    smeTeamCard = await AdaptiveCardHelper.ShareFeedbackSubmitText(message, turnContext, cancellationToken).ConfigureAwait(false);
+                    smeTeamCard = await AdaptiveCardHelper.ShareFeedbackSubmitText(message, turnContext, cancellationToken, this.logger).ConfigureAwait(false);
                     if (smeTeamCard != null)
                     {
-                        await this.SendActivityInChatAsync(turnContext, MessageFactory.Text(Strings.ThankYouTextContent), cancellationToken);
+                       await this.SendActivityInChatAsync(turnContext, MessageFactory.Text(Strings.ThankYouTextContent), cancellationToken);
                     }
 
                     break;
