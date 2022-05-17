@@ -13,6 +13,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
     using Microsoft.Bot.Schema.Teams;
     using Microsoft.Extensions.Logging;
     using Microsoft.Teams.Apps.FAQPlusPlus.Common.Cards;
+    using Microsoft.Teams.Apps.FAQPlusPlus.Common.Components;
     using Microsoft.Teams.Apps.FAQPlusPlus.Common.Models;
     using Microsoft.Teams.Apps.FAQPlusPlus.Common.Providers;
     using Newtonsoft.Json;
@@ -23,8 +24,6 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
     /// </summary>
     public static class AdaptiveCardHelper
     {
-
-        private static readonly ILogger Logger;
 
         /// <summary>
         /// Helps to get the expert submit card.
@@ -38,7 +37,8 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
             IMessageActivity message,
             ITurnContext<IMessageActivity> turnContext,
             CancellationToken cancellationToken,
-            ITicketsProvider ticketsProvider)
+            ITicketsProvider ticketsProvider,
+            ILogger<ConversationService> myLogger)
         {
             var askAnExpertSubmitTextPayload = ((JObject)message.Value).ToObject<AskAnExpertCardPayload>();
 
@@ -55,6 +55,9 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
                 return null;
             }
 
+            myLogger.LogInformation($"Ask an Expert title: {askAnExpertSubmitTextPayload?.Title}");
+            myLogger.LogInformation($"Ask an Expert description: {askAnExpertSubmitTextPayload?.Description}");
+
             var userDetails = await GetUserDetailsInPersonalChatAsync(turnContext, cancellationToken).ConfigureAwait(false);
             return await CreateTicketAsync(message, askAnExpertSubmitTextPayload, userDetails, ticketsProvider).ConfigureAwait(false);
         }
@@ -69,16 +72,10 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
         public static async Task<Attachment> ShareFeedbackSubmitText(
             IMessageActivity message,
             ITurnContext<IMessageActivity> turnContext,
-            CancellationToken cancellationToken)
+            CancellationToken cancellationToken,
+            ILogger<ConversationService> myLogger)
         {
             var shareFeedbackSubmitTextPayload = ((JObject)message.Value).ToObject<ShareFeedbackCardPayload>();
-            object[] list = new object[5];
-            list[0] = shareFeedbackSubmitTextPayload.Description;
-            list[1] = shareFeedbackSubmitTextPayload.Rating;
-            list[2] = shareFeedbackSubmitTextPayload.UserQuestion;
-            list[3] = shareFeedbackSubmitTextPayload.MsTeams;
-            list[4] = shareFeedbackSubmitTextPayload.KnowledgeBaseAnswer;
-            Logger.LogInformation("Received Feedback details", list);
 
             // Validate required fields.
             if (!Enum.TryParse(shareFeedbackSubmitTextPayload?.Rating, out FeedbackRating rating))
@@ -92,6 +89,9 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Helpers
                 await turnContext.UpdateActivityAsync(updateCardActivity, cancellationToken).ConfigureAwait(false);
                 return null;
             }
+
+            myLogger.LogInformation($"Feedback Rating: {shareFeedbackSubmitTextPayload?.Rating}");
+            myLogger.LogInformation($"Feedback Description: {shareFeedbackSubmitTextPayload?.Description}");
 
             var teamsUserDetails = await GetUserDetailsInPersonalChatAsync(turnContext, cancellationToken).ConfigureAwait(false);
             return SmeFeedbackCard.GetCard(shareFeedbackSubmitTextPayload, teamsUserDetails);
