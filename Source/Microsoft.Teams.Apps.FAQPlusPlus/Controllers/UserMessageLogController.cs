@@ -4,7 +4,7 @@ using Microsoft.Teams.Apps.FAQPlusPlus.Common.Providers;
 
 namespace Microsoft.Teams.Apps.FAQPlusPlus.Controllers
 {
-    [Route("/messages")]
+    [Route("/messagelog")]
     [ApiController]
     public class UserMessageLogController : Controller
     {
