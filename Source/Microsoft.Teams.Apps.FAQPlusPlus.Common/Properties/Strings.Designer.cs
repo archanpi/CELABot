@@ -268,7 +268,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to I didn&apos;t find a matching answer for this question. Do you want me to ask an expert?.
+        ///   Looks up a localized string similar to I didn&apos;t find a matching answer for this question. Refer to CELA Sharepoint (https://microsoft.sharepoint.com/sites/CELAWeb). Do you want me to ask an expert?.
         /// </summary>
         public static string CustomMessage {
             get {
@@ -1160,7 +1160,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to View article.
+        ///   Looks up a localized string similar to View answer.
         /// </summary>
         public static string ViewArticleButtonText {
             get {

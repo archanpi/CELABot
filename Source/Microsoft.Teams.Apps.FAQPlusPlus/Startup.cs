@@ -131,6 +131,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus
             services.AddSingleton<IKnowledgeBaseSearchService>((provider) => new KnowledgeBaseSearchService(this.Configuration["SearchServiceName"], this.Configuration["SearchServiceQueryApiKey"], this.Configuration["SearchServiceAdminApiKey"], this.Configuration["StorageConnectionString"], this.Configuration.GetValue<bool>("IsGCCHybridDeployment")));
 
             services.AddSingleton<ISearchService, SearchService>();
+            services.AddSingleton<ICelaBotMemoryCache, CelaBotMemoryCache>();
             services.AddSingleton<IMemoryCache, MemoryCache>();
             services.AddTransient(sp => (BotFrameworkAdapter)sp.GetRequiredService<IBotFrameworkHttpAdapter>());
             services.AddTransient<FaqPlusExpertBot>();
@@ -142,7 +143,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus
 
             // Create the telemetry middleware(used by the telemetry initializer) to track conversation events
             services.AddSingleton<TelemetryLoggerMiddleware>();
-            services.AddMemoryCache();
+            services.AddDistributedMemoryCache();
 
             // Add i18n.
             services.AddLocalization(options => options.ResourcesPath = "Resources");

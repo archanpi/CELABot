@@ -126,9 +126,17 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
             }
             else
             {
+                System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
+                stopWatch.Start();
                 commandType = "Sending input to QnAMaker";
                 this.logger.LogInformation(commandType);
                 await this.qnaPairService.GetReplyToQnAAsync(turnContext, message).ConfigureAwait(false);
+                stopWatch.Stop();
+                TimeSpan ts = stopWatch.Elapsed;
+
+                // Format and display the TimeSpan value.
+                string elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
+                this.logger.LogInformation($"Time taken to answer a question: {elapsedTime}");
             }
 
             await this.botGraphQlClient.SaveMessage(message.From?.Id ?? "", message.From?.Name ?? "", commandType, text, message.ReplyToId ?? "", String.Empty);
@@ -205,7 +213,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                     // Check if knowledge base has not published yet.
                     if (!hasPublished)
                     {
-                        var activity = (Activity)turnContext.Activity;
+                        var activity = (Activity) turnContext.Activity;
                         var activityValue = ((JObject)activity.Value).ToObject<AdaptiveSubmitActionData>();
                         await turnContext.SendActivityAsync(MessageFactory.Text(string.Format(CultureInfo.InvariantCulture, Strings.WaitMessage, activityValue?.OriginalQuestion))).ConfigureAwait(false);
                         this.logger.LogError(ex, $"Error processing message: {ex.Message}", SeverityLevel.Error);
