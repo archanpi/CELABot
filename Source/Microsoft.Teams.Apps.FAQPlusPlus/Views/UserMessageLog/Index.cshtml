@@ -1,0 +1,59 @@
+﻿
+@model List<Microsoft.Teams.Apps.FAQPlusPlus.Common.Models.User>
+
+
+<style>
+    table {
+  font-family: arial, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+td, th {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+}
+tr:nth-child(even) {
+  background-color: #dddddd;
+}
+</style>
+<h1>User messages:</h1>
+<body class="theme-default">
+    @foreach (var user in Model)
+    {
+        <div style="margin-bottom:20px">
+            <h2>User: @user.Name</h2>
+            <table class="table">
+            <thead>
+                <tr>
+                    <th>
+                        Command type
+                    </th>
+                    <th>
+                        Message
+                    </th>
+                    <th>
+                        Reply To
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in user.Messages)
+            {
+                <tr>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Type)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.Text)
+                    </td>
+                    <td>
+                        @Html.DisplayFor(modelItem => item.ReplyToId)
+                    </td>
+                </tr>
+            }
+            </tbody>
+            </table>
+         </div>
+    }
+</body>

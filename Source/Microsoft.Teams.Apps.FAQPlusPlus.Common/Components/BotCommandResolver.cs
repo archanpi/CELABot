@@ -39,6 +39,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
         private readonly IQnAPairServiceFacade qnaPairService;
         private readonly string appBaseUri;
         private readonly IConversationService conversationService;
+        private readonly BotGraphQlClient botGraphQlClient;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="BotCommandResolver"/> class.
@@ -50,6 +51,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
         /// <param name="qnaPairService">Instance of QnA pair service class to call add/update/get QnA pair.</param>
         /// <param name="botSettings">Represents a set of key/value application configuration properties for FaqPlusPlus bot.</param>
         /// <param name="conversationService">Conversation service to send adaptive card in personal and teams chat.</param>
+        /// <param name="botGraphQlClient">GraphQl client...</param>
         public BotCommandResolver(
             Common.Providers.IConfigurationDataProvider configurationProvider,
             IQnaServiceProvider qnaServiceProvider,
@@ -57,7 +59,8 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
             IQnAPairServiceFacade qnaPairService,
             IOptionsMonitor<BotSettings> botSettings,
             ILogger<BotCommandResolver> logger,
-            IConversationService conversationService)
+            IConversationService conversationService,
+            BotGraphQlClient botGraphQlClient)
         {
             this.configurationProvider = configurationProvider ?? throw new ArgumentNullException(nameof(configurationProvider));
             this.qnaServiceProvider = qnaServiceProvider ?? throw new ArgumentNullException(nameof(qnaServiceProvider));
@@ -65,6 +68,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
             this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
             this.qnaPairService = qnaPairService ?? throw new ArgumentNullException(nameof(qnaPairService));
             this.conversationService = conversationService ?? throw new ArgumentNullException(nameof(conversationService));
+            this.botGraphQlClient = botGraphQlClient;
             if (botSettings == null)
             {
                 throw new ArgumentNullException(nameof(botSettings));
@@ -86,31 +90,37 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
             ITurnContext<IMessageActivity> turnContext,
             CancellationToken cancellationToken)
         {
+            string text = (message.Text ?? string.Empty).Trim();
+            string commandType;
             if (!string.IsNullOrEmpty(message.ReplyToId) && (message.Value != null) && ((JObject)message.Value).HasValues)
             {
-                this.logger.LogInformation("Card submit in 1:1 chat");
+
+                commandType = "Card submit in 1:1 chat";
+                this.logger.LogInformation(commandType);
+                await this.botGraphQlClient.SaveMessage(message.From?.Id ?? "", message.From?.Name ?? "", commandType, text, message.ReplyToId ?? "", String.Empty);
                 await this.conversationService.SendAdaptiveCardInPersonalChatAsync(message, turnContext, cancellationToken).ConfigureAwait(false);
                 return;
             }
 
-            string text = (message.Text ?? string.Empty).Trim();
-
             if (text.Equals(Strings.BotCommandAskExpert, StringComparison.CurrentCultureIgnoreCase) ||
                 text.Equals(Constants.AskAnExpert, StringComparison.InvariantCultureIgnoreCase))
             {
-                this.logger.LogInformation("Sending user ask an expert card");
+                commandType = "Sending user ask an expert card";
+                this.logger.LogInformation(commandType);
                 await turnContext.SendActivityAsync(MessageFactory.Attachment(AskAnExpertCard.GetCard())).ConfigureAwait(false);
             }
             else if (text.Equals(Strings.BotCommandFeedback, StringComparison.CurrentCultureIgnoreCase) ||
                 text.Equals(Constants.ShareFeedback, StringComparison.InvariantCultureIgnoreCase))
             {
-                this.logger.LogInformation("Sending user feedback card");
+                commandType = "Sending user feedback card";
+                this.logger.LogInformation(commandType);
                 await turnContext.SendActivityAsync(MessageFactory.Attachment(ShareFeedbackCard.GetCard())).ConfigureAwait(false);
             }
             else if (text.Equals(Strings.BotCommandTour, StringComparison.CurrentCultureIgnoreCase) ||
                 text.Equals(Constants.TakeATour, StringComparison.InvariantCultureIgnoreCase))
             {
-                this.logger.LogInformation("Sending user tour card");
+                commandType = "Sending user tour card";
+                this.logger.LogInformation(commandType);
                 var userTourCards = TourCarousel.GetUserTourCards(this.appBaseUri);
                 await turnContext.SendActivityAsync(MessageFactory.Carousel(userTourCards)).ConfigureAwait(false);
             }
@@ -118,7 +128,8 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
             {
                 System.Diagnostics.Stopwatch stopWatch = new System.Diagnostics.Stopwatch();
                 stopWatch.Start();
-                this.logger.LogInformation("Sending input to QnAMaker");
+                commandType = "Sending input to QnAMaker";
+                this.logger.LogInformation(commandType);
                 await this.qnaPairService.GetReplyToQnAAsync(turnContext, message).ConfigureAwait(false);
                 stopWatch.Stop();
                 TimeSpan ts = stopWatch.Elapsed;
@@ -127,6 +138,8 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                 string elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
                 this.logger.LogInformation($"Time taken to answer a question: {elapsedTime}");
             }
+
+            await this.botGraphQlClient.SaveMessage(message.From?.Id ?? "", message.From?.Name ?? "", commandType, text, message.ReplyToId ?? "", String.Empty);
         }
 
         /// <summary>
@@ -142,6 +155,7 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
             CancellationToken cancellationToken)
         {
             string text;
+            string type;
 
             // Check if the incoming request is from SME for updating the ticket status.
             if (!string.IsNullOrEmpty(message.ReplyToId) && (message.Value != null) && ((JObject)message.Value).HasValues && !string.IsNullOrEmpty(((JObject)message.Value)["ticketId"]?.ToString()))
@@ -158,17 +172,20 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                 switch (text)
                 {
                     case Constants.TeamTour:
+                        type = "Sending team tour card";
                         this.logger.LogInformation("Sending team tour card");
                         var teamTourCards = TourCarousel.GetTeamTourCards(this.appBaseUri);
                         await turnContext.SendActivityAsync(MessageFactory.Carousel(teamTourCards)).ConfigureAwait(false);
                         break;
 
                     case ChangeStatus:
+                        type = $"Card submit in channel {message.Value?.ToString()}";
                         this.logger.LogInformation($"Card submit in channel {message.Value?.ToString()}");
                         await this.conversationService.SendAdaptiveCardInTeamChatAsync(message, turnContext, cancellationToken).ConfigureAwait(false);
                         return;
 
                     case Constants.DeleteCommand:
+                        type = $"Delete card submit in channel {message.Value?.ToString()}";
                         this.logger.LogInformation($"Delete card submit in channel {message.Value?.ToString()}");
                         await QnaHelper.DeleteQnaPair(turnContext, this.qnaServiceProvider, this.activityStorageProvider, this.logger, cancellationToken).ConfigureAwait(false);
                         break;
@@ -177,10 +194,13 @@ namespace Microsoft.Teams.Apps.FAQPlusPlus.Common.Components
                         return;
 
                     default:
+                        type = "Unrecognized input in channel";
                         this.logger.LogInformation("Unrecognized input in channel");
                         await turnContext.SendActivityAsync(MessageFactory.Attachment(UnrecognizedTeamInputCard.GetCard())).ConfigureAwait(false);
                         break;
                 }
+
+                await this.botGraphQlClient.SaveMessage(message.From?.Id ?? "", message.From?.Name ?? "", type, text, message.ReplyToId ?? "", String.Empty);
             }
             catch (Exception ex)
             {
